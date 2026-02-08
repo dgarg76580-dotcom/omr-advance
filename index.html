@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMR Designer | Premium Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        :root {
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --sidebar-bg: #0f172a;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #020617;
+            color: #f8fafc;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Glassmorphism Sidebar */
+        aside {
+            width: 380px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 20px 0 50px rgba(0,0,0,0.3);
+            z-index: 50;
+        }
+
+        /* Modern Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+        /* Document Workspace */
+        main {
+            flex: 1;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            overflow: auto;
+            padding: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        /* The Paper - Elevated Aesthetic */
+        #omr-paper {
+            width: 210mm;
+            min-height: 297mm;
+            background: white;
+            color: #1e293b;
+            padding: 20mm;
+            box-shadow: 0 50px 100px -20px rgba(0,0,0,0.6);
+            transform-origin: top center;
+            position: relative;
+        }
+
+        #omr-paper::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 20px 20px;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        /* Questions Layout */
+        .question-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background 0.2s;
+        }
+
+        .bubble {
+            width: 22px;
+            height: 22px;
+            border: 1.8px solid #1e293b;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .bubble:hover { border-color: var(--accent); color: var(--accent); transform: scale(1.1); }
+        .bubble.selected { background: #1e293b; color: white; border-color: #1e293b; transform: scale(1.05); }
+        
+        .int-box {
+            width: 26px;
+            height: 32px;
+            border: 1.8px solid #1e293b;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            background: transparent;
+            border-radius: 4px;
+        }
+
+        .section-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            column-gap: 35px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* UI Elements */
+        .input-group {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 12px;
+            transition: all 0.3s;
+        }
+
+        .input-group:focus-within {
+            border-color: var(--accent);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
+            box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            body, main { background: white; padding: 0; }
+            #omr-paper { box-shadow: none; margin: 0; transform: scale(1) !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <aside class="no-print">
+        <div class="mb-10 text-center">
+            <h2 class="text-2xl font-black tracking-tighter italic">OMR<span class="text-indigo-500">STUDIO</span></h2>
+            <p class="text-[10px] text-slate-500 font-bold tracking-[0.2em] uppercase">Premium Designer</p>
+        </div>
+
+        <div class="flex-1 overflow-y-auto space-y-6 pr-2">
+            <div class="input-group">
+                <div class="flex justify-between mb-2">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase">Workspace Zoom</label>
+                </div>
+                <input type="range" min="0.4" max="1.1" step="0.01" value="0.85" 
+                    oninput="document.getElementById('omr-paper').style.transform = `scale(${this.value})`" 
+                    class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+            </div>
+
+            <div class="input-group">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Document Title</label>
+                <input type="text" id="examTitle" oninput="renderPaper()" placeholder="e.g. JEE MOCK TEST" 
+                    class="w-full bg-transparent text-sm text-white font-semibold outline-none">
+            </div>
+
+            <div id="section-list" class="space-y-4"></div>
+
+            <button onclick="addSection()" class="w-full py-4 border border-dashed border-slate-700 rounded-xl text-slate-500 hover:text-indigo-400 hover:border-indigo-400 hover:bg-indigo-500/5 transition-all text-[10px] font-black tracking-widest uppercase">
+                + New Section
+            </button>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-slate-800 space-y-3">
+            <button onclick="downloadPDF()" class="btn-primary w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform">
+                <i class="fa-solid fa-file-pdf"></i> Export High-Res PDF
+            </button>
+            <button onclick="window.print()" class="w-full bg-slate-800 hover:bg-slate-700 py-3 rounded-xl text-[11px] font-bold transition">
+                <i class="fa-solid fa-print mr-2 opacity-50"></i> Quick Print
+            </button>
+        </div>
+    </aside>
+
+    <main>
+        <div id="omr-paper" style="transform: scale(0.85);">
+            <div class="flex justify-between items-end border-b-[6px] border-slate-900 pb-6 mb-10">
+                <div class="relative z-10">
+                    <h1 id="paper-title" class="text-4xl font-[800] tracking-tighter uppercase leading-none text-slate-900">OMR ANSWER SHEET</h1>
+                    <p class="text-[11px] font-bold mt-3 text-slate-500 tracking-[0.3em] uppercase">Official Examination Document</p>
+                </div>
+                
+                <div class="flex gap-4 relative z-10">
+                    <div class="border-[2px] border-slate-900 p-2 bg-slate-50">
+                        <div class="text-[9px] font-black mb-2 text-center border-b border-slate-900 pb-1">STUDENT ID</div>
+                        <div class="flex gap-1.5">
+                            <div class="w-5 h-7 border border-slate-400 bg-white"></div>
+                            <div class="w-5 h-7 border border-slate-400 bg-white"></div>
+                            <div class="w-5 h-7 border border-slate-400 bg-white"></div>
+                            <div class="w-5 h-7 border border-slate-400 bg-white"></div>
+                            <div class="w-5 h-7 border border-slate-400 bg-white"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="paper-content" class="space-y-12"></div>
+
+            <div class="mt-20 pt-6 border-t-[1.5px] border-slate-200 flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                <div class="flex items-center gap-4">
+                    <span>Engine v4.0</span>
+                    <span class="w-1.5 h-1.5 bg-slate-200 rounded-full"></span>
+                    <span>System ID: #OMR-2026</span>
+                </div>
+                <div class="flex gap-2">
+                    <div class="w-4 h-4 bg-slate-900"></div>
+                    <div class="w-4 h-4 bg-slate-900"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let sections = [];
+
+        function addSection() {
+            sections.push({
+                id: Date.now(),
+                title: `Section ${sections.length + 1}`,
+                type: 'single',
+                count: 15
+            });
+            renderSidebar();
+            renderPaper();
+        }
+
+        function updateSection(id, key, value) {
+            const section = sections.find(s => s.id === id);
+            if (section) {
+                section[key] = value;
+                renderPaper();
+            }
+        }
+
+        function deleteSection(id) {
+            sections = sections.filter(s => s.id !== id);
+            renderSidebar();
+            renderPaper();
+        }
+
+        function renderSidebar() {
+            const list = document.getElementById('section-list');
+            list.innerHTML = '';
+            sections.forEach(s => {
+                const div = document.createElement('div');
+                div.className = "input-group relative animate-in fade-in duration-300";
+                div.innerHTML = `
+                    <button onclick="deleteSection(${s.id})" class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition shadow-lg shadow-red-500/30">
+                        <i class="fa-solid fa-times text-[10px]"></i>
+                    </button>
+                    <input type="text" value="${s.title}" oninput="updateSection(${s.id}, 'title', this.value)" class="bg-transparent border-b border-white/10 text-xs font-bold text-indigo-300 mb-4 focus:outline-none w-full focus:border-indigo-500 transition-colors">
+                    <div class="flex gap-2">
+                        <select onchange="updateSection(${s.id}, 'type', this.value)" class="bg-slate-900 text-[10px] p-2 rounded-lg border border-white/5 w-full text-slate-300">
+                            <option value="single" ${s.type==='single'?'selected':''}>Single Correct</option>
+                            <option value="multi" ${s.type==='multi'?'selected':''}>Multi Correct</option>
+                            <option value="integer" ${s.type==='integer'?'selected':''}>Integer Input</option>
+                        </select>
+                        <input type="number" value="${s.count}" oninput="updateSection(${s.id}, 'count', parseInt(this.value) || 0)" class="bg-slate-900 text-[10px] p-2 rounded-lg border border-white/5 w-16 text-white font-mono">
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function renderPaper() {
+            const container = document.getElementById('paper-content');
+            const titleText = document.getElementById('examTitle').value;
+            document.getElementById('paper-title').innerText = titleText || "OMR ANSWER SHEET";
+            
+            container.innerHTML = '';
+            let qNum = 1;
+
+            sections.forEach(s => {
+                const sec = document.createElement('div');
+                sec.innerHTML = `
+                    <div class="flex items-center gap-4 mb-4">
+                        <span class="bg-slate-900 text-white text-[10px] px-3 py-1 font-black tracking-[0.2em] uppercase">${s.title}</span>
+                        <div class="flex-1 h-[2px] bg-slate-100"></div>
+                        <span class="text-[9px] font-bold text-slate-400 font-mono italic">${s.type}</span>
+                    </div>
+                    <div class="section-grid" id="grid-${s.id}"></div>
+                `;
+                container.appendChild(sec);
+
+                const grid = document.getElementById(`grid-${s.id}`);
+                for (let i = 0; i < s.count; i++) {
+                    const row = document.createElement('div');
+                    row.className = "question-row";
+                    
+                    let inner = '';
+                    if (s.type === 'integer') {
+                        inner = `<div class="flex gap-1"><input type="text" maxlength="1" class="int-box" placeholder="0"><input type="text" maxlength="1" class="int-box" placeholder="0"><input type="text" maxlength="1" class="int-box" placeholder="0"></div>`;
+                    } else {
+                        ['A', 'B', 'C', 'D'].forEach(l => {
+                            inner += `<div class="bubble" onclick="handleBubble(this, '${s.type}')">${l}</div>`;
+                        });
+                    }
+
+                    row.innerHTML = `<span class="text-[11px] font-black w-6 text-slate-400 mono">${qNum}.</span><div class="flex gap-2">${inner}</div>`;
+                    grid.appendChild(row);
+                    qNum++;
+                }
+            });
+        }
+
+        function handleBubble(el, type) {
+            if (type === 'single') el.parentElement.querySelectorAll('.bubble').forEach(b => b.classList.remove('selected'));
+            el.classList.toggle('selected');
+        }
+
+        async function downloadPDF() {
+            const el = document.getElementById('omr-paper');
+            const zoom = el.style.transform;
+            el.style.transform = "scale(1)";
+            const canvas = await html2canvas(el, { scale: 3, useCORS: true });
+            const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+            pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 210, 297);
+            pdf.save(`${document.getElementById('examTitle').value || 'OMR'}.pdf`);
+            el.style.transform = zoom;
+        }
+
+        addSection();
+    </script>
+</body>
+</html>
