@@ -1,0 +1,137 @@
+/* Custom Scrollbar for the App feel */
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #1e293b;
+}
+::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 10px;
+}
+
+/* Layout Orientation */
+body {
+    background-color: #0f172a;
+    color: #f1f5f9;
+    font-family: 'Public Sans', sans-serif;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Sidebar Styling */
+aside {
+    width: 380px;
+    background-color: #1e293b;
+    border-right: 1px solid #334155;
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem;
+    z-index: 10;
+}
+
+/* Main Preview Area */
+main {
+    flex: 1;
+    background-color: #334155;
+    padding: 2rem;
+    overflow-y: auto;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+/* The OMR "Paper" Sheet */
+#omr-paper {
+    background: white;
+    color: black;
+    width: 210mm; /* A4 Width */
+    min-height: 297mm; /* A4 Height */
+    padding: 15mm 20mm;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    transform-origin: top center;
+    transition: transform 0.3s ease;
+}
+
+/* Question Grid Styling */
+.section-header {
+    background: #000;
+    color: #fff;
+    padding: 4px 12px;
+    font-size: 0.75rem;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+}
+
+.bubble {
+    width: 22px;
+    height: 22px;
+    border: 1.5px solid #000;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: bold;
+    cursor: pointer;
+    user-select: none;
+}
+
+.bubble.selected {
+    background-color: #000;
+    color: #fff;
+}
+
+.int-box {
+    width: 32px;
+    height: 22px;
+    border: 1.5px solid #000;
+    text-align: center;
+    font-weight: bold;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* Interactive Sidebar Elements */
+.control-card {
+    background: #334155;
+    border-radius: 12px;
+    padding: 1rem;
+    border: 1px solid #475569;
+    transition: all 0.2s;
+}
+
+.control-card:hover {
+    border-color: #3b82f6;
+}
+
+input[type="text"], input[type="number"], select {
+    background: #0f172a;
+    border: 1px solid #475569;
+    color: white;
+    padding: 0.5rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+}
+
+/* Print Overrides */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    body {
+        background: white;
+    }
+    main {
+        padding: 0;
+        overflow: visible;
+    }
+    #omr-paper {
+        box-shadow: none;
+        margin: 0;
+        width: 100%;
+    }
+}
